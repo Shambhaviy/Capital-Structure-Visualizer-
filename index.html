@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capital Structure Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F4F4F1;
+    --bg-panel: #FFFFFF;
+    --bg-panel-raised: #EFEEE9;
+    --ink: #1C2430;
+    --ink-dim: #5C6472;
+    --ink-faint: #8B92A0;
+    --brass: #B85C2E;
+    --brass-bright: #D97840;
+    --line: #E1DFD8;
+    --debt-senior: #33414D;
+    --debt-sub: #5A6B78;
+    --convert: #A9764A;
+    --preferred: #C1743F;
+    --equity: #D9793D;
+    --red: #A05A52;
+    --font-serif: 'Source Serif 4', Georgia, serif;
+    --font-sans: 'Inter', -apple-system, sans-serif;
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #10151F;
+    --bg-panel: #161C28;
+    --bg-panel-raised: #1C2330;
+    --ink: #EDE8DD;
+    --ink-dim: #9BA3B4;
+    --ink-faint: #5F6779;
+    --brass: #7C8B99;
+    --brass-bright: #96A5B2;
+    --line: #2A3140;
+    --debt-senior: #4E5F6E;
+    --debt-sub: #6C7C89;
+    --convert: #8C96A3;
+    --preferred: #96A5B2;
+    --equity: #A9B5C0;
+    --red: #B36B62;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  .app {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 40px 28px 80px;
+  }
+
+  header {
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 28px;
+  }
+
+  header h1 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: 34px;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+  }
+
+  header p {
+    color: var(--ink-dim);
+    font-size: 15px;
+    max-width: 640px;
+    line-height: 1.6;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 32px;
+  }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  /* ---- Input panel ---- */
+  .panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 24px;
+    box-shadow: 0 1px 2px rgba(28, 36, 48, 0.04);
+  }
+
+  .panel-title {
+    font-size: 13px;
+    color: var(--ink-dim);
+    margin-bottom: 20px;
+    font-weight: 500;
+  }
+
+  .field {
+    margin-bottom: 18px;
+  }
+
+  .field-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+
+  .field-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+
+  .swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .field-value {
+    font-variant-numeric: tabular-nums;
+    font-size: 13.5px;
+    color: var(--ink-dim);
+  }
+
+  .field input[type="range"] {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--line);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  .field input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--brass-bright);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+  }
+
+  .field input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--brass-bright);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+  }
+
+  .num-input {
+    width: 100%;
+    background: var(--bg-panel-raised);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    padding: 8px 10px;
+    border-radius: 4px;
+    margin-top: 6px;
+  }
+
+  .num-input:focus {
+    outline: none;
+    border-color: var(--brass);
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--line);
+    margin: 22px 0;
+  }
+
+  .cash-note {
+    font-size: 12px;
+    color: var(--ink-faint);
+    line-height: 1.5;
+    margin-top: 4px;
+  }
+
+  .presets {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+
+  .preset-btn {
+    background: var(--bg-panel-raised);
+    border: 1px solid var(--line);
+    color: var(--ink-dim);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+
+  .preset-btn:hover {
+    border-color: var(--brass);
+    color: var(--ink);
+  }
+
+  .preset-btn:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--brass-bright);
+    outline-offset: 2px;
+  }
+
+  /* ---- Visual panel ---- */
+  .visual-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .ev-summary {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 24px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+    box-shadow: 0 1px 2px rgba(28, 36, 48, 0.04);
+  }
+
+  .ev-block .ev-label {
+    font-size: 12px;
+    color: var(--ink-dim);
+    margin-bottom: 6px;
+  }
+
+  .ev-block .ev-figure {
+    font-family: var(--font-serif);
+    font-size: 32px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ev-formula {
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stack-area {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 28px;
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 28px;
+    box-shadow: 0 1px 2px rgba(28, 36, 48, 0.04);
+  }
+
+  @media (max-width: 700px) {
+    .stack-area { grid-template-columns: 1fr; }
+  }
+
+  .stack-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stack-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-bottom: 10px;
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: column-reverse;
+    border-radius: 4px;
+    overflow: hidden;
+    min-height: 360px;
+    border: 1px solid var(--line);
+  }
+
+  .stack-segment {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    color: #FAFAF8;
+    font-size: 13px;
+    font-weight: 600;
+    transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 0;
+  }
+
+  .stack-segment.empty {
+    display: none;
+  }
+
+  .stack-segment .seg-name {
+    font-family: var(--font-sans);
+  }
+
+  .stack-segment .seg-val {
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-sans);
+  }
+
+  .seniority-note {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+
+  .legend-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .legend-title {
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-bottom: 10px;
+  }
+
+  .legend-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+
+  .legend-row:last-child { border-bottom: none; }
+
+  .legend-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink);
+  }
+
+  .legend-pct {
+    color: var(--ink-dim);
+    font-variant-numeric: tabular-nums;
+    font-size: 12.5px;
+  }
+
+  .explainer {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 24px 28px;
+    box-shadow: 0 1px 2px rgba(28, 36, 48, 0.04);
+  }
+
+  .explainer h3 {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .explainer p {
+    color: var(--ink-dim);
+    font-size: 13.5px;
+    line-height: 1.65;
+    max-width: 760px;
+  }
+
+  .explainer p + p { margin-top: 10px; }
+
+  /* ---- Tabs ---- */
+  .tabs {
+    display: flex;
+    gap: 28px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 4px;
+  }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 2px 12px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--ink-faint);
+    cursor: pointer;
+    position: relative;
+    top: 1px;
+    border-bottom: 2px solid transparent;
+  }
+
+  .tab-btn.active {
+    color: var(--ink);
+    border-bottom-color: var(--brass-bright);
+    font-weight: 500;
+  }
+
+  .tab-btn:hover { color: var(--ink); }
+
+  .tab-content { display: none; flex-direction: column; gap: 24px; }
+  .tab-content.active { display: flex; }
+
+  /* ---- Recovery Waterfall ---- */
+  .exit-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 24px 28px;
+    box-shadow: 0 1px 2px rgba(28, 36, 48, 0.04);
+  }
+
+  .exit-panel .field-label-row { margin-bottom: 10px; }
+
+  .waterfall-table {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 4px 28px 8px;
+    box-shadow: 0 1px 2px rgba(28, 36, 48, 0.04);
+  }
+
+  .wf-header-row, .wf-row {
+    display: grid;
+    grid-template-columns: 1.3fr 0.9fr 0.9fr 0.6fr 1.3fr;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .wf-header-row {
+    font-size: 11.5px;
+    color: var(--ink-faint);
+  }
+
+  .wf-row:last-child { border-bottom: none; }
+
+  .wf-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+  }
+
+  .wf-num {
+    font-variant-numeric: tabular-nums;
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+
+  .wf-pct {
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .wf-pct.full { color: #4B7A5C; }
+  .wf-pct.partial { color: var(--brass); }
+  .wf-pct.wiped { color: var(--red); }
+
+  .wf-bar-track {
+    height: 8px;
+    background: var(--bg-panel-raised);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .wf-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .cmp-header-row, .cmp-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .cmp-header-row {
+    font-size: 11.5px;
+    color: var(--ink-faint);
+  }
+
+  .cmp-row:last-child { border-bottom: none; }
+
+  @media (max-width: 640px) {
+    .wf-header-row, .wf-row { grid-template-columns: 1.3fr 1fr 1fr; }
+    .wf-header-row span:nth-child(4),
+    .wf-header-row span:nth-child(5),
+    .wf-row .wf-pct,
+    .wf-row .wf-bar-track { display: none; }
+    .cmp-header-row, .cmp-row { grid-template-columns: 1.2fr 1fr 1fr; }
+    .cmp-header-row span:nth-child(4), .cmp-row .wf-pct { display: none; }
+  }
+
+  footer {
+    margin-top: 36px;
+    font-size: 12px;
+    color: var(--ink-faint);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header style="display:flex; justify-content:space-between; align-items:flex-end; gap:20px; flex-wrap:wrap;">
+    <div>
+      <h1>Capital Structure Visualizer</h1>
+      <p>Break down how a company is financed — debt, preferred stock, and equity — and see how it rolls up into Enterprise Value. Adjust any figure to see the capital stack update live.</p>
+    </div>
+    <button class="preset-btn" id="btn-export" style="white-space:nowrap; padding:8px 16px;">Export Summary</button>
+  </header>
+
+  <div class="layout">
+    <!-- INPUT PANEL -->
+    <div class="panel">
+      <div class="panel-title">Capital components ($mm)</div>
+
+      <div class="field">
+        <div class="field-label-row">
+          <span class="field-label"><span class="swatch" style="background:var(--debt-senior)"></span>Senior Debt</span>
+          <span class="field-value" id="val-senior">$400</span>
+        </div>
+        <input type="range" id="slider-senior" min="0" max="2000" step="10" value="400">
+      </div>
+
+      <div class="field">
+        <div class="field-label-row">
+          <span class="field-label"><span class="swatch" style="background:var(--debt-sub)"></span>Subordinated Debt</span>
+          <span class="field-value" id="val-sub">$150</span>
+        </div>
+        <input type="range" id="slider-sub" min="0" max="1000" step="10" value="150">
+      </div>
+
+      <div class="field">
+        <div class="field-label-row">
+          <span class="field-label"><span class="swatch" style="background:var(--convert)"></span>Convertible Notes</span>
+          <span class="field-value" id="val-convert">$100</span>
+        </div>
+        <input type="range" id="slider-convert" min="0" max="1000" step="10" value="100">
+      </div>
+
+      <div class="field">
+        <div class="field-label-row">
+          <span class="field-label"><span class="swatch" style="background:var(--preferred)"></span>Preferred Stock</span>
+          <span class="field-value" id="val-preferred">$120</span>
+        </div>
+        <input type="range" id="slider-preferred" min="0" max="1000" step="10" value="120">
+      </div>
+
+      <div class="field">
+        <div class="field-label-row">
+          <span class="field-label"><span class="swatch" style="background:var(--equity)"></span>Common Equity</span>
+          <span class="field-value" id="val-equity">$900</span>
+        </div>
+        <input type="range" id="slider-equity" min="0" max="3000" step="10" value="900">
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <div class="field-label-row">
+          <span class="field-label"><span class="swatch" style="background:var(--red)"></span>Cash &amp; Equivalents</span>
+          <span class="field-value" id="val-cash">$80</span>
+        </div>
+        <input type="range" id="slider-cash" min="0" max="1000" step="10" value="80">
+        <div class="cash-note">Cash reduces Enterprise Value — it's subtracted from the total capital raised, since it could theoretically pay down debt.</div>
+      </div>
+
+      <div class="presets">
+        <button class="preset-btn" data-preset="lbo">LBO — debt-heavy</button>
+        <button class="preset-btn" data-preset="growth">Growth co. — equity-heavy</button>
+        <button class="preset-btn" data-preset="balanced">Balanced</button>
+      </div>
+    </div>
+
+    <!-- VISUAL PANEL -->
+    <div class="visual-panel">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="stack">Capital Stack</button>
+        <button class="tab-btn" data-tab="waterfall">Recovery Waterfall</button>
+        <button class="tab-btn" data-tab="wacc">WACC</button>
+        <button class="tab-btn" data-tab="credit">Credit Metrics</button>
+        <button class="tab-btn" data-tab="compare">Pre/Post Deal</button>
+      </div>
+
+      <div class="tab-content active" id="tab-stack">
+        <div class="ev-summary">
+          <div class="ev-block">
+            <div class="ev-label">Enterprise Value</div>
+            <div class="ev-figure" id="ev-total">$1,590mm</div>
+          </div>
+          <div class="ev-formula" id="ev-formula">Debt ($650) + Preferred ($120) + Equity ($900) − Cash ($80)</div>
+        </div>
+
+        <div class="stack-area">
+          <div class="stack-col">
+            <div class="stack-header">
+              <span>Highest risk / last paid</span>
+              <span>Lowest risk / first paid</span>
+            </div>
+            <div class="stack" id="stack"></div>
+            <div class="seniority-note">
+              <span>↑ Common Equity (top)</span>
+              <span>Senior Debt (bottom) ↓</span>
+            </div>
+          </div>
+
+          <div class="legend-col">
+            <div class="legend-title">Breakdown</div>
+            <div id="legend"></div>
+          </div>
+        </div>
+
+        <div class="explainer">
+          <h3>How to read this</h3>
+          <p>The stack shows every dollar of capital funding this company, ordered by seniority — the order in which each holder gets paid back if the company is sold or liquidated. Senior debt sits at the bottom because it's paid first and carries the least risk; common equity sits at the top because shareholders are paid last but capture all the upside if the company performs well.</p>
+          <p>Enterprise Value is the sum of every layer, minus cash on hand. It represents the value of the company's core operations — independent of how that value happens to be financed.</p>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-waterfall">
+        <div class="exit-panel">
+          <div class="field-label-row">
+            <span class="field-label">Exit / Sale Value ($mm)</span>
+            <span class="field-value" id="val-exit">$1,590</span>
+          </div>
+          <input type="range" id="slider-exit" min="0" max="5000" step="10" value="1590">
+          <div class="cash-note" id="exit-note">Drag to model what happens if the company is sold for more or less than its total capital raised.</div>
+        </div>
+
+        <div class="waterfall-table">
+          <div class="wf-header-row">
+            <span>Tranche</span>
+            <span>Claim</span>
+            <span>Recovery</span>
+            <span>%</span>
+            <span>Payout</span>
+          </div>
+          <div id="waterfall-rows"></div>
+        </div>
+
+        <div class="explainer">
+          <h3>How to read this</h3>
+          <p>When a company is sold or liquidated, proceeds are paid out strictly in order of seniority — each tranche must be paid in full before the next one in line receives anything. Senior debt is paid first, common equity last.</p>
+          <p>Equity has no fixed claim — it simply receives whatever is left over. That's why equity can be wiped out entirely in a low-value scenario, but also why it captures all the upside if the exit value exceeds total capital raised.</p>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-wacc">
+        <div class="exit-panel">
+          <div class="field">
+            <div class="field-label-row">
+              <span class="field-label">Cost of Debt (pre-tax)</span>
+              <span class="field-value" id="val-costdebt">6.0%</span>
+            </div>
+            <input type="range" id="slider-costdebt" min="0" max="20" step="0.1" value="6">
+          </div>
+          <div class="field">
+            <div class="field-label-row">
+              <span class="field-label">Cost of Preferred</span>
+              <span class="field-value" id="val-costpref">8.0%</span>
+            </div>
+            <input type="range" id="slider-costpref" min="0" max="20" step="0.1" value="8">
+          </div>
+          <div class="field">
+            <div class="field-label-row">
+              <span class="field-label">Cost of Equity</span>
+              <span class="field-value" id="val-costequity">11.0%</span>
+            </div>
+            <input type="range" id="slider-costequity" min="0" max="30" step="0.1" value="11">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <div class="field-label-row">
+              <span class="field-label">Tax Rate</span>
+              <span class="field-value" id="val-taxrate">25.0%</span>
+            </div>
+            <input type="range" id="slider-taxrate" min="0" max="50" step="0.5" value="25">
+          </div>
+        </div>
+
+        <div class="ev-summary">
+          <div class="ev-block">
+            <div class="ev-label">Weighted Average Cost of Capital</div>
+            <div class="ev-figure" id="wacc-total">8.4%</div>
+          </div>
+          <div class="ev-formula" id="wacc-formula">(Debt weight × after-tax cost) + (Preferred weight × cost) + (Equity weight × cost)</div>
+        </div>
+
+        <div class="waterfall-table">
+          <div class="wf-header-row">
+            <span>Component</span>
+            <span>Weight</span>
+            <span>Cost</span>
+            <span>Contrib.</span>
+            <span>Share of WACC</span>
+          </div>
+          <div id="wacc-rows"></div>
+        </div>
+
+        <div class="explainer">
+          <h3>How to read this</h3>
+          <p>WACC blends the cost of each layer of capital, weighted by how much of the total structure it represents. It's the minimum return a company's investments need to generate to satisfy everyone who has financed it — debt holders, preferred holders, and shareholders alike.</p>
+          <p>Debt's cost is reduced by the tax shield, since interest payments are tax-deductible — that's why after-tax cost of debt is typically lower than its stated interest rate. Equity has no such shield, which is one reason it's the most expensive layer of capital despite ranking last in the payout order.</p>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-credit">
+        <div class="exit-panel">
+          <div class="field">
+            <div class="field-label-row">
+              <span class="field-label">EBITDA ($mm)</span>
+              <span class="field-value" id="val-ebitda">$300</span>
+            </div>
+            <input type="range" id="slider-ebitda" min="0" max="1500" step="10" value="300">
+          </div>
+          <div class="field">
+            <div class="field-label-row">
+              <span class="field-label">Leverage Covenant (max Debt/EBITDA)</span>
+              <span class="field-value" id="val-levthresh">6.0x</span>
+            </div>
+            <input type="range" id="slider-levthresh" min="0" max="10" step="0.1" value="6">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <div class="field-label-row">
+              <span class="field-label">Coverage Covenant (min Interest Coverage)</span>
+              <span class="field-value" id="val-covthresh">2.0x</span>
+            </div>
+            <input type="range" id="slider-covthresh" min="0" max="10" step="0.1" value="2">
+          </div>
+        </div>
+
+        <div class="ev-summary">
+          <div class="ev-block">
+            <div class="ev-label">Net Debt / EBITDA</div>
+            <div class="ev-figure" id="credit-leverage">2.2x</div>
+          </div>
+          <div class="ev-block">
+            <div class="ev-label">Interest Coverage</div>
+            <div class="ev-figure" id="credit-coverage">7.7x</div>
+          </div>
+          <div class="ev-formula" id="credit-note">Interest expense estimated from total debt × cost of debt (set on the WACC tab).</div>
+        </div>
+
+        <div class="waterfall-table">
+          <div class="wf-header-row">
+            <span>Metric</span>
+            <span>Value</span>
+            <span>Covenant</span>
+            <span>Status</span>
+            <span></span>
+          </div>
+          <div id="credit-rows"></div>
+        </div>
+
+        <div class="explainer">
+          <h3>How to read this</h3>
+          <p>Lenders set leverage and coverage covenants to limit how much debt a company can carry relative to its cash flow. Debt/EBITDA and Net Debt/EBITDA measure how many years of EBITDA it would take to repay debt outright; interest coverage measures how comfortably EBITDA covers interest payments.</p>
+          <p>Breaching a covenant doesn't necessarily mean default, but it typically triggers a renegotiation with lenders, restricted flexibility (like a dividend block), or a technical default depending on the loan agreement.</p>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-compare">
+        <div class="exit-panel" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+          <div style="max-width:520px;">
+            <div class="field-label" style="margin-bottom:4px;">Pre-Transaction Snapshot</div>
+            <div class="cash-note" id="compare-status">No snapshot saved yet — go to the Capital Stack tab, set up the "before" structure, then come back and save it.</div>
+          </div>
+          <button class="preset-btn" id="btn-snapshot" style="white-space:nowrap;">Save current as "Pre"</button>
+        </div>
+
+        <div class="stack-area" style="grid-template-columns: 1fr 1fr;">
+          <div class="stack-col">
+            <div class="stack-header"><span>Pre-Transaction</span><span id="compare-pre-ev"></span></div>
+            <div class="stack" id="stack-pre" style="min-height:280px;"></div>
+          </div>
+          <div class="stack-col">
+            <div class="stack-header"><span>Post-Transaction (live)</span><span id="compare-post-ev"></span></div>
+            <div class="stack" id="stack-post" style="min-height:280px;"></div>
+          </div>
+        </div>
+
+        <div class="waterfall-table">
+          <div class="cmp-header-row">
+            <span>Metric</span><span>Pre</span><span>Post</span><span>Δ</span>
+          </div>
+          <div id="compare-rows"></div>
+        </div>
+
+        <div class="explainer">
+          <h3>How to read this</h3>
+          <p>Save the current capital structure as your "Pre-Transaction" baseline, then adjust the sliders on the Capital Stack tab to model the deal — a new debt raise, an equity paydown, a refinancing. This tab always compares your saved snapshot against whatever the sliders currently show.</p>
+          <p>EBITDA, cost of debt, cost of equity, and tax rate are assumed to stay constant across the transaction — only the capital structure itself changes. That mirrors how an analyst models the impact of a transaction's "sources & uses" on leverage and cost of capital.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Capital Structure Visualizer — a demo tool for illustrating financing layers and Enterprise Value</footer>
+</div>
+
+<script>
+  const layers = [
+    { id: 'senior',    name: 'Senior Debt',        color: 'var(--debt-senior)', max: 2000 },
+    { id: 'sub',       name: 'Subordinated Debt',  color: 'var(--debt-sub)',    max: 1000 },
+    { id: 'convert',   name: 'Convertible Notes',  color: 'var(--convert)',     max: 1000 },
+    { id: 'preferred', name: 'Preferred Stock',    color: 'var(--preferred)',   max: 1000 },
+    { id: 'equity',    name: 'Common Equity',      color: 'var(--equity)',     max: 3000 },
+  ];
+
+  const presets = {
+    lbo:      { senior: 900, sub: 400, convert: 0,   preferred: 0,   equity: 300, cash: 40 },
+    growth:   { senior: 50,  sub: 0,   convert: 200, preferred: 300, equity: 2200, cash: 150 },
+    balanced: { senior: 400, sub: 150, convert: 100, preferred: 120, equity: 900, cash: 80 },
+  };
+
+  function fmt(n) {
+    return '$' + Math.round(n).toLocaleString('en-US');
+  }
+
+  function getValues() {
+    const v = {};
+    layers.forEach(l => v[l.id] = Number(document.getElementById('slider-' + l.id).value));
+    v.cash = Number(document.getElementById('slider-cash').value);
+    return v;
+  }
+
+  function render() {
+    const v = getValues();
+
+    layers.forEach(l => {
+      document.getElementById('val-' + l.id).textContent = fmt(v[l.id]);
+    });
+    document.getElementById('val-cash').textContent = fmt(v.cash);
+
+    const debtTotal = v.senior + v.sub + v.convert;
+    const totalCapital = debtTotal + v.preferred + v.equity;
+    const ev = totalCapital - v.cash;
+
+    document.getElementById('ev-total').textContent = fmt(ev) + 'mm';
+    document.getElementById('ev-formula').textContent =
+      `Debt (${fmt(debtTotal)}) + Preferred (${fmt(v.preferred)}) + Equity (${fmt(v.equity)}) − Cash (${fmt(v.cash)})`;
+
+    const stackTotal = totalCapital || 1;
+    const stackEl = document.getElementById('stack');
+    stackEl.innerHTML = '';
+    const legendEl = document.getElementById('legend');
+    legendEl.innerHTML = '';
+
+    layers.forEach(l => {
+      const val = v[l.id];
+      const pct = (val / stackTotal) * 100;
+
+      const seg = document.createElement('div');
+      seg.className = 'stack-segment' + (val <= 0 ? ' empty' : '');
+      seg.style.height = pct + '%';
+      seg.style.background = l.color;
+      seg.innerHTML = `<span class="seg-name">${l.name}</span><span class="seg-val">${fmt(val)}</span>`;
+      stackEl.appendChild(seg);
+
+      const row = document.createElement('div');
+      row.className = 'legend-row';
+      row.innerHTML = `<span class="legend-name"><span class="swatch" style="background:${l.color}"></span>${l.name}</span><span class="legend-pct">${pct.toFixed(1)}%</span>`;
+      legendEl.appendChild(row);
+    });
+
+    if (typeof renderWaterfall === 'function') renderWaterfall();
+    if (typeof renderWACC === 'function') renderWACC();
+    if (typeof renderCredit === 'function') renderCredit();
+    if (typeof renderCompare === 'function') renderCompare();
+  }
+
+  layers.forEach(l => {
+    document.getElementById('slider-' + l.id).addEventListener('input', render);
+  });
+  document.getElementById('slider-cash').addEventListener('input', render);
+
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = presets[btn.dataset.preset];
+      Object.keys(p).forEach(key => {
+        const el = document.getElementById('slider-' + key);
+        if (el) el.value = p[key];
+      });
+      render();
+    });
+  });
+
+  /* ---- Recovery Waterfall ---- */
+  function renderWaterfall() {
+    const v = getValues();
+    const exitValue = Number(document.getElementById('slider-exit').value);
+    document.getElementById('val-exit').textContent = fmt(exitValue);
+
+    const waterfallOrder = [
+      { id: 'senior',    name: 'Senior Debt',       color: 'var(--debt-senior)', claim: v.senior },
+      { id: 'sub',       name: 'Subordinated Debt', color: 'var(--debt-sub)',    claim: v.sub },
+      { id: 'convert',   name: 'Convertible Notes', color: 'var(--convert)',     claim: v.convert },
+      { id: 'preferred', name: 'Preferred Stock',   color: 'var(--preferred)',   claim: v.preferred },
+      { id: 'equity',    name: 'Common Equity',     color: 'var(--equity)',      claim: v.equity },
+    ];
+
+    const totalClaims = waterfallOrder.reduce((sum, t) => sum + t.claim, 0);
+    document.getElementById('exit-note').textContent =
+      `Total capital claims: ${fmt(totalClaims)}mm. Move the slider above or below this to see who gets paid, and who doesn't.`;
+
+    let remaining = exitValue;
+    const rowsEl = document.getElementById('waterfall-rows');
+    rowsEl.innerHTML = '';
+
+    waterfallOrder.forEach((t, i) => {
+      const isEquity = t.id === 'equity';
+      let recovery;
+      if (isEquity) {
+        recovery = Math.max(remaining, 0);
+      } else {
+        recovery = Math.max(Math.min(t.claim, remaining), 0);
+        remaining -= recovery;
+      }
+
+      const pct = t.claim > 0 ? (recovery / t.claim) * 100 : (recovery > 0 ? 100 : 0);
+      let statusClass = 'partial';
+      if (pct >= 100) statusClass = 'full';
+      if (pct <= 0) statusClass = 'wiped';
+
+      const barPct = Math.min(pct, 100);
+      const pctLabel = isEquity && recovery > t.claim && t.claim > 0
+        ? pct.toFixed(0) + '% (+upside)'
+        : pct.toFixed(0) + '%';
+
+      const row = document.createElement('div');
+      row.className = 'wf-row';
+      row.innerHTML = `
+        <span class="wf-name"><span class="swatch" style="background:${t.color}"></span>${t.name}</span>
+        <span class="wf-num">${isEquity ? fmt(t.claim) : fmt(t.claim)}</span>
+        <span class="wf-num">${fmt(recovery)}</span>
+        <span class="wf-pct ${statusClass}">${pctLabel}</span>
+        <div class="wf-bar-track"><div class="wf-bar-fill" style="width:${barPct}%;background:${t.color}"></div></div>
+      `;
+      rowsEl.appendChild(row);
+    });
+  }
+
+  document.getElementById('slider-exit').addEventListener('input', renderWaterfall);
+
+  /* ---- WACC ---- */
+  function fmtPct(n) {
+    return n.toFixed(1) + '%';
+  }
+
+  function renderWACC() {
+    const v = getValues();
+    const costDebt = Number(document.getElementById('slider-costdebt').value);
+    const costPref = Number(document.getElementById('slider-costpref').value);
+    const costEquity = Number(document.getElementById('slider-costequity').value);
+    const taxRate = Number(document.getElementById('slider-taxrate').value);
+
+    document.getElementById('val-costdebt').textContent = fmtPct(costDebt);
+    document.getElementById('val-costpref').textContent = fmtPct(costPref);
+    document.getElementById('val-costequity').textContent = fmtPct(costEquity);
+    document.getElementById('val-taxrate').textContent = fmtPct(taxRate);
+
+    const debtTotal = v.senior + v.sub + v.convert;
+    const totalCapital = (debtTotal + v.preferred + v.equity) || 1;
+
+    const wDebt = debtTotal / totalCapital;
+    const wPref = v.preferred / totalCapital;
+    const wEquity = v.equity / totalCapital;
+
+    const afterTaxCostDebt = costDebt * (1 - taxRate / 100);
+
+    const contribDebt = wDebt * afterTaxCostDebt;
+    const contribPref = wPref * costPref;
+    const contribEquity = wEquity * costEquity;
+    const wacc = contribDebt + contribPref + contribEquity;
+
+    document.getElementById('wacc-total').textContent = wacc.toFixed(2) + '%';
+    document.getElementById('wacc-formula').textContent =
+      `(${(wDebt * 100).toFixed(0)}% debt × ${afterTaxCostDebt.toFixed(1)}% after-tax) + (${(wPref * 100).toFixed(0)}% preferred × ${costPref.toFixed(1)}%) + (${(wEquity * 100).toFixed(0)}% equity × ${costEquity.toFixed(1)}%)`;
+
+    const components = [
+      { name: 'Debt (all tranches)', color: 'var(--debt-senior)', weight: wDebt, cost: afterTaxCostDebt, rawCost: costDebt, contrib: contribDebt, isDebt: true },
+      { name: 'Preferred Stock',     color: 'var(--preferred)',   weight: wPref, cost: costPref, contrib: contribPref },
+      { name: 'Common Equity',       color: 'var(--equity)',      weight: wEquity, cost: costEquity, contrib: contribEquity },
+    ];
+
+    const waccSafe = wacc || 1;
+    const rowsEl = document.getElementById('wacc-rows');
+    rowsEl.innerHTML = '';
+
+    components.forEach(c => {
+      const shareOfWacc = Math.max((c.contrib / waccSafe) * 100, 0);
+      const costLabel = c.isDebt ? `${c.rawCost.toFixed(1)}% (${c.cost.toFixed(1)}% a.t.)` : `${c.cost.toFixed(1)}%`;
+
+      const row = document.createElement('div');
+      row.className = 'wf-row';
+      row.innerHTML = `
+        <span class="wf-name"><span class="swatch" style="background:${c.color}"></span>${c.name}</span>
+        <span class="wf-num">${(c.weight * 100).toFixed(0)}%</span>
+        <span class="wf-num">${costLabel}</span>
+        <span class="wf-pct">${c.contrib.toFixed(2)}pp</span>
+        <div class="wf-bar-track"><div class="wf-bar-fill" style="width:${shareOfWacc}%;background:${c.color}"></div></div>
+      `;
+      rowsEl.appendChild(row);
+    });
+  }
+
+  ['costdebt', 'costpref', 'costequity', 'taxrate'].forEach(id => {
+    document.getElementById('slider-' + id).addEventListener('input', () => { renderWACC(); if (typeof renderCompare === 'function') renderCompare(); });
+  });
+  document.getElementById('slider-costdebt').addEventListener('input', () => renderCredit());
+
+  /* ---- Credit Metrics ---- */
+  function renderCredit() {
+    const v = getValues();
+    const ebitda = Number(document.getElementById('slider-ebitda').value);
+    const levThreshold = Number(document.getElementById('slider-levthresh').value);
+    const covThreshold = Number(document.getElementById('slider-covthresh').value);
+
+    document.getElementById('val-ebitda').textContent = fmt(ebitda);
+    document.getElementById('val-levthresh').textContent = levThreshold.toFixed(1) + 'x';
+    document.getElementById('val-covthresh').textContent = covThreshold.toFixed(1) + 'x';
+
+    const debtTotal = v.senior + v.sub + v.convert;
+    const netDebt = Math.max(debtTotal - v.cash, 0);
+    const costDebtEl = document.getElementById('slider-costdebt');
+    const costDebt = costDebtEl ? Number(costDebtEl.value) : 6;
+    const interestExpense = debtTotal * (costDebt / 100);
+
+    const debtEbitda = ebitda > 0 ? debtTotal / ebitda : 0;
+    const netDebtEbitda = ebitda > 0 ? netDebt / ebitda : 0;
+    const interestCoverage = interestExpense > 0 ? ebitda / interestExpense : (ebitda > 0 ? Infinity : 0);
+
+    document.getElementById('credit-leverage').textContent = ebitda > 0 ? netDebtEbitda.toFixed(1) + 'x' : 'n/a';
+    document.getElementById('credit-coverage').textContent = isFinite(interestCoverage) ? interestCoverage.toFixed(1) + 'x' : '∞';
+    document.getElementById('credit-note').textContent =
+      `Interest expense estimated at ${fmt(interestExpense)}mm (${fmt(debtTotal)}mm total debt × ${costDebt.toFixed(1)}% cost of debt, set on the WACC tab).`;
+
+    const leverageBreach = ebitda > 0 && netDebtEbitda > levThreshold;
+    const coverageBreach = ebitda > 0 && interestCoverage < covThreshold;
+    document.getElementById('credit-leverage').style.color = leverageBreach ? 'var(--red)' : 'var(--ink)';
+    document.getElementById('credit-coverage').style.color = coverageBreach ? 'var(--red)' : 'var(--ink)';
+
+    const metrics = [
+      { name: 'Debt / EBITDA', value: debtEbitda, threshold: levThreshold, breach: ebitda > 0 && debtEbitda > levThreshold, color: 'var(--debt-senior)' },
+      { name: 'Net Debt / EBITDA', value: netDebtEbitda, threshold: levThreshold, breach: leverageBreach, color: 'var(--debt-sub)' },
+      { name: 'Interest Coverage', value: interestCoverage, threshold: covThreshold, breach: coverageBreach, color: 'var(--equity)', invert: true },
+    ];
+
+    const rowsEl = document.getElementById('credit-rows');
+    rowsEl.innerHTML = '';
+
+    metrics.forEach(m => {
+      const displayValue = isFinite(m.value) ? m.value.toFixed(1) + 'x' : '∞';
+      const statusClass = ebitda <= 0 ? '' : (m.breach ? 'wiped' : 'full');
+      const statusLabel = ebitda <= 0 ? '—' : (m.breach ? 'Breach' : 'OK');
+      const barBase = (m.invert ? m.threshold * 2 : m.threshold * 1.5) || 1;
+      const rawForBar = isFinite(m.value) ? m.value : barBase;
+      const barPct = Math.min((rawForBar / barBase) * 100, 100);
+
+      const row = document.createElement('div');
+      row.className = 'wf-row';
+      row.innerHTML = `
+        <span class="wf-name"><span class="swatch" style="background:${m.color}"></span>${m.name}</span>
+        <span class="wf-num">${displayValue}</span>
+        <span class="wf-num">${m.threshold.toFixed(1)}x</span>
+        <span class="wf-pct ${statusClass}">${statusLabel}</span>
+        <div class="wf-bar-track"><div class="wf-bar-fill" style="width:${barPct}%;background:${m.color}"></div></div>
+      `;
+      rowsEl.appendChild(row);
+    });
+  }
+
+  ['ebitda', 'levthresh', 'covthresh'].forEach(id => {
+    document.getElementById('slider-' + id).addEventListener('input', () => { renderCredit(); if (typeof renderCompare === 'function') renderCompare(); });
+  });
+
+  /* ---- Pre/Post Deal Comparison ---- */
+  let preSnapshot = null;
+
+  function computeMetrics(vals) {
+    const debtTotal = vals.senior + vals.sub + vals.convert;
+    const totalCapital = (debtTotal + vals.preferred + vals.equity) || 0;
+    const ev = totalCapital - vals.cash;
+
+    const ebitda = Number(document.getElementById('slider-ebitda').value);
+    const debtEbitda = ebitda > 0 ? debtTotal / ebitda : 0;
+
+    const costDebt = Number(document.getElementById('slider-costdebt').value);
+    const costPref = Number(document.getElementById('slider-costpref').value);
+    const costEquity = Number(document.getElementById('slider-costequity').value);
+    const taxRate = Number(document.getElementById('slider-taxrate').value);
+
+    const capBase = totalCapital || 1;
+    const wDebt = debtTotal / capBase;
+    const wPref = vals.preferred / capBase;
+    const wEquity = vals.equity / capBase;
+    const afterTaxCostDebt = costDebt * (1 - taxRate / 100);
+    const wacc = wDebt * afterTaxCostDebt + wPref * costPref + wEquity * costEquity;
+
+    return { ev, debtTotal, debtEbitda, wacc };
+  }
+
+  function renderMiniStack(containerEl, vals) {
+    const totalCapital = (vals.senior + vals.sub + vals.convert + vals.preferred + vals.equity) || 1;
+    containerEl.innerHTML = '';
+    layers.forEach(l => {
+      const val = vals[l.id];
+      const pct = (val / totalCapital) * 100;
+      const seg = document.createElement('div');
+      seg.className = 'stack-segment' + (val <= 0 ? ' empty' : '');
+      seg.style.height = pct + '%';
+      seg.style.background = l.color;
+      seg.innerHTML = `<span class="seg-name">${l.name}</span><span class="seg-val">${fmt(val)}</span>`;
+      containerEl.appendChild(seg);
+    });
+  }
+
+  function formatValue(type, v) {
+    if (type === 'money') return fmt(v) + 'mm';
+    if (type === 'x') return v.toFixed(1) + 'x';
+    if (type === 'pct') return v.toFixed(2) + '%';
+  }
+
+  function formatDelta(type, v) {
+    const sign = v >= 0 ? '+' : '-';
+    const abs = Math.abs(v);
+    if (type === 'money') return sign + '$' + Math.round(abs).toLocaleString() + 'mm';
+    if (type === 'x') return sign + abs.toFixed(1) + 'x';
+    if (type === 'pct') return sign + abs.toFixed(2) + '%';
+  }
+
+  function renderCompare() {
+    const liveVals = getValues();
+    const baseVals = preSnapshot || liveVals;
+
+    renderMiniStack(document.getElementById('stack-pre'), baseVals);
+    renderMiniStack(document.getElementById('stack-post'), liveVals);
+
+    const preMetrics = computeMetrics(baseVals);
+    const postMetrics = computeMetrics(liveVals);
+
+    document.getElementById('compare-pre-ev').textContent = fmt(preMetrics.ev) + 'mm EV';
+    document.getElementById('compare-post-ev').textContent = fmt(postMetrics.ev) + 'mm EV';
+
+    const metrics = [
+      { name: 'Enterprise Value', pre: preMetrics.ev, post: postMetrics.ev, type: 'money', colorCode: false },
+      { name: 'Total Debt', pre: preMetrics.debtTotal, post: postMetrics.debtTotal, type: 'money', colorCode: false },
+      { name: 'Debt / EBITDA', pre: preMetrics.debtEbitda, post: postMetrics.debtEbitda, type: 'x', colorCode: true, lowerBetter: true },
+      { name: 'WACC', pre: preMetrics.wacc, post: postMetrics.wacc, type: 'pct', colorCode: true, lowerBetter: true },
+    ];
+
+    const rowsEl = document.getElementById('compare-rows');
+    rowsEl.innerHTML = '';
+
+    metrics.forEach(m => {
+      const delta = m.post - m.pre;
+      const flat = Math.abs(delta) < 0.0001;
+      const deltaClass = !m.colorCode || flat ? '' : ((m.lowerBetter ? delta < 0 : delta > 0) ? 'full' : 'wiped');
+
+      const row = document.createElement('div');
+      row.className = 'cmp-row';
+      row.innerHTML = `
+        <span class="wf-name">${m.name}</span>
+        <span class="wf-num">${formatValue(m.type, m.pre)}</span>
+        <span class="wf-num">${formatValue(m.type, m.post)}</span>
+        <span class="wf-pct ${deltaClass}">${flat ? '—' : formatDelta(m.type, delta)}</span>
+      `;
+      rowsEl.appendChild(row);
+    });
+  }
+
+  document.getElementById('btn-snapshot').addEventListener('click', () => {
+    preSnapshot = getValues();
+    document.getElementById('compare-status').textContent =
+      'Snapshot saved. Now adjust the Capital Stack tab to model the transaction — this comparison updates live against your saved "Pre" structure.';
+    renderCompare();
+  });
+
+  /* ---- Export Summary ---- */
+  function exportSummary() {
+    const btn = document.getElementById('btn-export');
+
+    const v = getValues();
+    const debtTotal = v.senior + v.sub + v.convert;
+    const totalCapital = debtTotal + v.preferred + v.equity;
+    const ev = totalCapital - v.cash;
+
+    const costDebt = Number(document.getElementById('slider-costdebt').value);
+    const costPref = Number(document.getElementById('slider-costpref').value);
+    const costEquity = Number(document.getElementById('slider-costequity').value);
+    const taxRate = Number(document.getElementById('slider-taxrate').value);
+    const capBase = totalCapital || 1;
+    const wDebt = debtTotal / capBase, wPref = v.preferred / capBase, wEquity = v.equity / capBase;
+    const afterTaxCostDebt = costDebt * (1 - taxRate / 100);
+    const wacc = wDebt * afterTaxCostDebt + wPref * costPref + wEquity * costEquity;
+
+    const ebitda = Number(document.getElementById('slider-ebitda').value);
+    const interestExpense = debtTotal * (costDebt / 100);
+    const netDebt = Math.max(debtTotal - v.cash, 0);
+    const netDebtEbitda = ebitda > 0 ? netDebt / ebitda : 0;
+    const interestCoverage = interestExpense > 0 ? ebitda / interestExpense : 0;
+
+    const exitValue = Number(document.getElementById('slider-exit').value);
+    let remaining = exitValue;
+    const wfOrder = [
+      ['Senior Debt', v.senior], ['Subordinated Debt', v.sub],
+      ['Convertible Notes', v.convert], ['Preferred Stock', v.preferred],
+    ];
+    const wfLines = [];
+    wfOrder.forEach(([name, claim]) => {
+      const recovery = Math.max(Math.min(claim, remaining), 0);
+      remaining -= recovery;
+      const pct = claim > 0 ? (recovery / claim * 100).toFixed(0) : '0';
+      wfLines.push(`- ${name}: claim $${Math.round(claim)}mm -> recovery $${Math.round(recovery)}mm (${pct}%)`);
+    });
+    const equityRecovery = Math.max(remaining, 0);
+    const equityPct = v.equity > 0 ? (equityRecovery / v.equity * 100).toFixed(0) : '0';
+    wfLines.push(`- Common Equity: claim $${Math.round(v.equity)}mm -> recovery $${Math.round(equityRecovery)}mm (${equityPct}%)`);
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    const md = `# Capital Structure Summary
+Generated ${today}
+
+## Capital Structure ($mm)
+- Senior Debt: $${Math.round(v.senior)}
+- Subordinated Debt: $${Math.round(v.sub)}
+- Convertible Notes: $${Math.round(v.convert)}
+- Preferred Stock: $${Math.round(v.preferred)}
+- Common Equity: $${Math.round(v.equity)}
+- Cash & Equivalents: $${Math.round(v.cash)}
+
+**Enterprise Value: $${Math.round(ev)}mm**
+(Debt $${Math.round(debtTotal)} + Preferred $${Math.round(v.preferred)} + Equity $${Math.round(v.equity)} - Cash $${Math.round(v.cash)})
+
+## Recovery Waterfall (at $${Math.round(exitValue)}mm exit value)
+${wfLines.join('\n')}
+
+## Cost of Capital
+- Cost of Debt (pre-tax): ${costDebt.toFixed(1)}% | after-tax: ${afterTaxCostDebt.toFixed(1)}%
+- Cost of Preferred: ${costPref.toFixed(1)}%
+- Cost of Equity: ${costEquity.toFixed(1)}%
+- Tax Rate: ${taxRate.toFixed(1)}%
+- **WACC: ${wacc.toFixed(2)}%**
+
+## Credit Metrics
+- EBITDA: $${Math.round(ebitda)}mm
+- Net Debt / EBITDA: ${ebitda > 0 ? netDebtEbitda.toFixed(1) + 'x' : 'n/a'}
+- Interest Coverage: ${interestExpense > 0 ? interestCoverage.toFixed(1) + 'x' : 'n/a'}
+
+---
+Generated with the Capital Structure Visualizer.
+`;
+
+    // Standard browser download — works on any website, no platform-specific API needed
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'capital-structure-summary.md';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    btn.textContent = 'Saved ✓';
+    setTimeout(() => { btn.textContent = 'Export Summary'; }, 2000);
+  }
+
+  document.getElementById('btn-export').addEventListener('click', exportSummary);
+
+  /* ---- Tabs ---- */
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  render();
+  renderWaterfall();
+  renderWACC();
+  renderCredit();
+  renderCompare();
+</script>
+
+</body>
+</html>
